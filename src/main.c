@@ -6,66 +6,73 @@
 #define FIELD_WIDTH 82
 #define FIELD_HEIGTH 27
 #define MIN_SPEED 1000
-#define MAX_SPEED 50
+#define MAX_SPEED 10
 
-void start_game();
-void init_field(int field[ROWS][COLS]);
-void draw_field(int field[ROWS][COLS], int speed);
+WINDOW* init_ncurses();
+int init_field(int field[ROWS][COLS]);
+void draw_field(int field[ROWS][COLS], WINDOW* win);
 void calculate_new_matrix(int field[ROWS][COLS], int new_field[ROWS][COLS]);
 int change_speed(int speed, int control);
 
 int main() {
-    initscr();
-    int speed = 50;
-    int control = 0;
-
-    initscr();
-    cbreak();
-    noecho();
-    nodelay(stdscr, TRUE);
-
+    int scan_result = 1;
     int field[ROWS][COLS];
-    int new_field[ROWS][COLS];
-    init_field(field);
-    draw_field(field, speed);
 
-    while (control != ' ') {
-        control = getch();
-        if (control == 'a' || control == 'z') {
-            speed = change_speed(speed, control);
-        }
-        calculate_new_matrix(field, new_field);
-        clear();
-        draw_field(field, speed);
-        refresh();
-        napms(speed);
+    scan_result = init_field(field);
+
+    if (!freopen("/dev/tty", "r", stdin)) {
+        scan_result = 0;
+        printf("n/a");
     }
 
-    endwin();
+    if (scan_result) {
+        int new_field[ROWS][COLS];
+        int speed = 300, control = 0;
+        WINDOW* w = init_ncurses();
+        draw_field(field, w);
+
+        while ((control = wgetch(w)) != ' ') {
+            if (control == 'a' || control == 'z') {
+                speed = change_speed(speed, control);
+            }
+            calculate_new_matrix(field, new_field);
+            draw_field(field, w);
+            wrefresh(w);
+            napms(speed);
+        }
+
+        delwin(w);
+        endwin();
+    } else {
+        printf("n/a");
+    }
+
     return 0;
 }
 
-/*void start_game() {
-    // TODO start game here. init matrix
-    draw_field(field[ROWS][COLS]);
-}*/
+WINDOW* init_ncurses() {
+    initscr();  // TODO fix leaks
+    WINDOW* win = newwin(ROWS + 2, COLS * 4 + 2, 0, 0);
+    cbreak();
+    noecho();
+    nodelay(win, TRUE);
 
-// void calculate_new_matrix(int **matrix) {
-//     // TODO: return new state matrix
-// }
+    return win;
+}
 
-void init_field(int field[ROWS][COLS]) {
-    for (int i = 0; i < ROWS; i++) {
-        for (int j = 0; j < COLS; j++) {
-            field[i][j] = 0;
+int init_field(int field[ROWS][COLS]) {
+    int is_ok = 1;
+    int row = 0;
+
+    for (int i = 0; i < ROWS * COLS; i++) {
+        if (i % 80 == 0) row++;
+        int col = i % 80;
+        if (scanf("%d", &field[row][col]) != 1) {
+            is_ok = 0;
         }
     }
-    // TODO: init state here. add presets from files
-    field[10][10] = 1;
-    field[11][10] = 1;
-    field[12][10] = 1;
-    field[12][9] = 1;
-    field[11][8] = 1;
+
+    return is_ok;
 }
 
 void calculate_new_matrix(int field[ROWS][COLS], int new_field[ROWS][COLS]) {
@@ -91,19 +98,20 @@ void calculate_new_matrix(int field[ROWS][COLS], int new_field[ROWS][COLS]) {
     }
 }
 
-void draw_field(int field[ROWS][COLS], int speed) {
+void draw_field(int field[ROWS][COLS], WINDOW* win) {
+    clear();
+
     for (int i = 0; i < COLS + 2; i++) {
         for (int j = 0; j < ROWS + 2; j++) {
-            if (i == 0 && j > 0) mvaddch(0, j, (char)168);
-            if (i == FIELD_HEIGTH - 1 && j > 0) mvaddch(i, j, (char)168);
-            if ((j == 0) || j == FIELD_WIDTH - 1) mvaddch(i, j, (char)168);
+            if (i == 0 && j > 0) {
+                mvwaddch(win, 0, j, (char)168);
+            }
+            if (i == FIELD_HEIGTH - 1 && j > 0) mvwaddch(win, i, j, (char)168);
+            if ((j == 0) || j == FIELD_WIDTH - 1) mvwaddch(win, i, j, (char)168);
             if ((i > 0) && (i < COLS + 1) && (j > 0) && (j < ROWS + 1))
-                mvaddch(i, j, ((field[j - 1][i - 1])) == 0 ? ' ' : (char)168);
-            // else mvaddch(i, j, ' ');
+                mvwaddch(win, i, j, ((field[j - 1][i - 1])) == 0 ? ' ' : (char)168);
         }
     }
-    mvprintw(FIELD_HEIGTH, 2, " Speed: %dms (a/z to change, SPACE to exit) ",
-             speed);  // TODO DELETE THIS LINE
 }
 
 int change_speed(int speed, int control) {
