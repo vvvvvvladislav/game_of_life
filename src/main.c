@@ -1,8 +1,8 @@
 #include <ncurses.h>
 #include <stdio.h>
 
-#define COLS 80    // Horizontal dimension (width)
-#define ROWS 25     // Vertical dimension (height)
+#define ROWS 80
+#define COLS 25
 #define FIELD_WIDTH 82
 #define FIELD_HEIGTH 27
 #define MIN_SPEED 1000
@@ -65,9 +65,9 @@ int init_field(int field[ROWS][COLS]) {
     int row = 0;
 
     for (int i = 0; i < (ROWS * COLS); i++) {
-        if (i % COLS == 0) row++;
-        int col = i % COLS;
-        if (scanf("%d", &field[row][col]) != 1) {
+        if (i % 80 == 0) row++;
+        int col = i % 80;
+        if (scanf("%d", &field[col][row]) != 1) {
             is_ok = 0;
         }
     }
@@ -101,15 +101,15 @@ void calculate_new_matrix(int field[ROWS][COLS], int new_field[ROWS][COLS]) {
 void draw_field(int field[ROWS][COLS], WINDOW* win) {
     clear();
 
-    for (int i = 0; i < ROWS + 2; i++) {
-        for (int j = 0; j < COLS + 2; j++) {
+    for (int i = 0; i < COLS + 2; i++) {
+        for (int j = 0; j < ROWS + 2; j++) {
             if (i == 0 && j > 0) {
                 mvwaddch(win, 0, j, (char)168);
             }
             if (i == FIELD_HEIGTH - 1 && j > 0) mvwaddch(win, i, j, (char)168);
             if ((j == 0) || j == FIELD_WIDTH - 1) mvwaddch(win, i, j, (char)168);
-            if ((i > 0) && (i < ROWS + 1) && (j > 0) && (j < COLS + 1))
-                mvwaddch(win, i, j, ((field[i - 1][j - 1])) == 0 ? ' ' : (char)168);
+            if ((i > 0) && (i < COLS + 1) && (j > 0) && (j < ROWS + 1))
+                mvwaddch(win, i, j, ((field[j - 1][i - 1])) == 0 ? ' ' : (char)168);
         }
     }
 }
