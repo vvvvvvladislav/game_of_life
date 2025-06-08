@@ -64,10 +64,10 @@ int init_field(int field[ROWS][COLS]) {
     int is_ok = 1;
     int row = 0;
 
-    for (int i = 0; i < ROWS * COLS; i++) {
+    for (int i = 0; i < (ROWS * COLS); i++) {
         if (i % 80 == 0) row++;
         int col = i % 80;
-        if (scanf("%d", &field[row][col]) != 1) {
+        if (scanf("%d", &field[col][row]) != 1) {
             is_ok = 0;
         }
     }
